@@ -2,8 +2,12 @@
 
 namespace App\Http\Controllers\OAuth;
 
+use App\Note\NoteClient;
+use App\NoteOAuth;
+use App\OAuth\Evernote;
 use App\User;
 use App\Http\Controllers\Controller;
+use EDAM\Types\Note;
 use Illuminate\Foundation\Auth\ThrottlesLogins;
 use Illuminate\Foundation\Auth\AuthenticatesAndRegistersUsers;
 use Illuminate\Http\Request;
@@ -11,31 +15,47 @@ use Illuminate\Http\Request;
 class OAuthController extends Controller
 {
     public function getIndex() {
-        $sandbox = true;
-
-        $oauth_handler = new \Evernote\Auth\OauthHandler($sandbox);
-
-        $key      = 'january9527';
-        $secret   = '2956cb602e90c95e';
-        $callback = 'http://pl.me:8008/oauth/index/callback';
-
-        $oauth_handler->authorize($key, $secret, $callback);
+        return view('oauth.index');
     }
 
-    public function getCallback(Request $request) {
-        echo $request->get('oauth_token');
-        echo '<br>';
-        echo $request->get('oauth_verifier');
+    public function getAuth(Evernote $evernote) {
+        $type = \Request::get('type');
+        $evernote->authorize('http://pl.me:8008/oauth/index/callback?type=' . $type);
+    }
 
-        $sandbox = true;
+    public function getCallback(Request $request, Evernote $evernote) {
+        $type = \Request::get('type');
 
-        $oauth_handler = new \Evernote\Auth\OauthHandler($sandbox);
+        if (in_array($type, ['source', 'dist'])) {
+            $result = $evernote->authorize('http://pl.me:8008/oauth/index/callback');
 
-        $key      = 'january9527';
-        $secret   = '2956cb602e90c95e';
-        $callback = 'http://pl.me:8008/oauth/index/callback';
-        $result = $oauth_handler->authorize($key, $secret, $callback);
+            \Session::set("evernote." . $type . ".oauth_token", $result['oauth_token']);
+//            echo "evernote." . $type . ".oauth_token";
+//            echo $result['oauth_token'];
+            return redirect('/oauth/index');
+        } else {
+            throw new \Exception('type must be source or dist!');
+        }
+    }
 
-        var_dump($result);
+    public function getTestQueue(NoteOAuth $auth) {
+        $auth->test();
+    }
+
+    public function getSend(NoteOAuth $auth) {
+        $auth->send();
+    }
+
+    public function getReceive(NoteOAuth $auth) {
+        $auth->receive();
+    }
+
+    public function getFib(NoteOAuth $auth) {
+        $auth->rpcSend((int)\Request::get('num'));
+    }
+
+    public function getNotebooks(NoteClient $client) {
+//        echo \Session::get('evernote.source.oauth_token');
+        echo $client->fetchNotebooks(\Session::get('evernote.source.oauth_token'));
     }
 }
