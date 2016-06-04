@@ -17,7 +17,8 @@ class Evernote
         $this->apiSecret = env('NOTE_EVERNOTE_API_SECRET');
     }
 
-    public function authorize($callback) {
+    public function authorize($callback = null) {
+        error_reporting(E_WARNING);
         return $this->oauthHandler->authorize($this->apiKey, $this->apiSecret, $callback);
     }
 }
