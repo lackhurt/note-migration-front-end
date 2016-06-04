@@ -20,14 +20,15 @@ class OAuthController extends Controller
 
     public function getAuth(Evernote $evernote) {
         $type = \Request::get('type');
-        $evernote->authorize('http://pl.me:8008/oauth/index/callback?type=' . $type);
+
+        $evernote->authorize(env('APP_URL') . '/oauth/index/callback?type=' . $type);
     }
 
     public function getCallback(Request $request, Evernote $evernote) {
         $type = \Request::get('type');
 
         if (in_array($type, ['source', 'dist'])) {
-            $result = $evernote->authorize('http://pl.me:8008/oauth/index/callback');
+            $result = $evernote->authorize();
 
             \Session::set("evernote." . $type . ".oauth_token", $result['oauth_token']);
 //            echo "evernote." . $type . ".oauth_token";
